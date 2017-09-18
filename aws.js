@@ -1,3 +1,6 @@
+let AWS = require('aws-sdk');
+AWS.config.update({region:'us-east-1'});
+let uuid = require('node-uuid');
 const { execSync } = require('child_process');
 const _ = require('lodash');
 let fs = require('fs');
@@ -5,38 +8,43 @@ let fs = require('fs');
 reportInstanceIpsByAutoScalingGroup();
 
 function reportInstanceIpsByAutoScalingGroup(){
-    let asgs = getAutoScalingGroups();
-    let instances = getInstances();
-    asgs.forEach((asg) => {
-        console.log(`*** ${asg.AutoScalingGroupName} *** (LC: ${asg.LaunchConfigurationName})`);
-        asg.Instances.forEach(asgInstance => {
-            process.stdout.write(asgInstance.InstanceId)
-            let instance = _.find(instances, (instance => {
-                return _.find(instance.Instances, dinstance => {
-                    return (dinstance.InstanceId === asgInstance.InstanceId)
-                })
-            }));
-            if (instance){
-                let subInstance = _.find(instance.Instances, dinstance => {
-                    return (dinstance.InstanceId === asgInstance.InstanceId)
+    Promise.all([getAutoScalingGroups(), getInstances()])
+        .then(results => {
+            let x = 10;
+            let asgs = results[0].AutoScalingGroups;
+            let instances = results[1].Reservations;
+            asgs.forEach((asg) => {
+                console.log(`*** ${asg.AutoScalingGroupName} *** (LC: ${asg.LaunchConfigurationName})`);
+                asg.Instances.forEach(asgInstance => {
+                    process.stdout.write(asgInstance.InstanceId)
+                    let instance = _.find(instances, (instance => {
+                        return _.find(instance.Instances, dinstance => {
+                            return (dinstance.InstanceId === asgInstance.InstanceId)
+                        })
+                    }));
+                    if (instance){
+                        let subInstance = _.find(instance.Instances, dinstance => {
+                            return (dinstance.InstanceId === asgInstance.InstanceId)
+                        });
+                        let ipAddress = subInstance.PrivateIpAddress;
+                        let keyName = subInstance.KeyName;
+                        process.stdout.write(`: ${ipAddress} (ssh -i "${keyName}.pem" ec2-user@${ipAddress})\n`);
+                    } else {
+                        process.stdout.write(': \n');
+                    }
                 });
-                let ipAddress = subInstance.PrivateIpAddress;
-                let keyName = subInstance.KeyName;
-                process.stdout.write(`: ${ipAddress} (ssh -i "${keyName}.pem" ec2-user@${ipAddress})\n`);
-            } else {
-                process.stdout.write(': \n');
-            }
+                console.log('');
+            })
+
         });
-        console.log('');
-    })
 }
 
 function getInstances(){
-    return JSON.parse(execSync('aws ec2 describe-instances')).Reservations;
+    return new AWS.EC2().describeInstances().promise();
 }
 
 function getAutoScalingGroups(){
-    return JSON.parse(execSync('aws autoscaling describe-auto-scaling-groups')).AutoScalingGroups;
+    return new AWS.AutoScaling().describeAutoScalingGroups().promise();
 }
 
 function getInstancesById(ids){
@@ -68,5 +76,4 @@ function findAutoScalingGroupByNameInstances(name){
     }
     let instanceIds = asg.Instances.map((i) => {return i.InstanceId});
     return getInstancesById(instanceIds).map((i) => {return i.Instances[0].PrivateIpAddress});
-    let x = 10;
 }
