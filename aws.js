@@ -1,18 +1,14 @@
-let AWS = require('aws-sdk');
-AWS.config.update({region:'us-east-1'});
+let taws = require('taws');
 let uuid = require('node-uuid');
 const { execSync } = require('child_process');
 const _ = require('lodash');
 let fs = require('fs');
 
-reportInstanceIpsByAutoScalingGroup();
-
 function reportInstanceIpsByAutoScalingGroup(){
-    Promise.all([getAutoScalingGroups(), getInstances()])
+    taws.getAWSInfo()
         .then(results => {
-            let x = 10;
-            let asgs = results[0].AutoScalingGroups;
-            let instances = results[1].Reservations;
+            let asgs = results.autoScalingGroups;
+            let instances = results.reservations;
             asgs.forEach((asg) => {
                 console.log(`*** ${asg.AutoScalingGroupName} *** (LC: ${asg.LaunchConfigurationName})`);
                 asg.Instances.forEach(asgInstance => {
@@ -35,12 +31,7 @@ function reportInstanceIpsByAutoScalingGroup(){
                 });
                 console.log('');
             })
-
         });
-}
-
-function getInstances(){
-    return new AWS.EC2().describeInstances().promise();
 }
 
 function getAutoScalingGroups(){

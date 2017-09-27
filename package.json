@@ -1,8 +1,8 @@
 {
-  "name": "aws",
+  "name": "taws",
   "version": "1.0.0",
   "description": "",
-  "main": "aws.js",
+  "main": "taws.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
