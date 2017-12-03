@@ -21,7 +21,7 @@ function getInstancesById(instanceIds, awsData) {
             if (instanceIds.includes(instance.InstanceId))
                 instances.push(instance);
         });
-    })
+    });
     return instances;
 }
 
