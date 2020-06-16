@@ -30,9 +30,18 @@ async function init(config) {
     let taws = new Taws();
     await taws.loadData();
     return {
-        getInstances: taws.getInstances,
-        getInstancesJMSEPath: taws.getInstancesJMSEPath,
-        refresh: taws.refresh
+        refresh: taws.refresh,
+        instances: {
+            getAll: () => {
+                return taws.data.instances;
+            },
+            findDeep: (searchString) => {
+                return taws.findDeep(searchString, taws.data['instances']);
+            },
+            findJSMEPath: (jmesPath, dataSet) => {
+                return taws.findJMESPath(jmesPath, dataSet || taws.data['instances']);
+            }
+        },
     };
 }
 
@@ -92,37 +101,38 @@ function Taws() {
             await fs.writeFileSync(tempFilePath, JSON.stringify(this.data, null, 2));
     };
 
-    this.getInstances = (searchString) => {
+    this.findDeep = (searchString, dataSet) => {
         if (!searchString)
-            return this.data.instances;
+            return dataSet;
         let results = [];
-        this.data.instances.forEach(instance => {
-            let instanceId = instance.InstanceId;
-            if (find(instance, searchString)) {
-                results.push(instance);
+        dataSet.forEach(item => {
+            if (find(item, searchString)) {
+                results.push(item);
             }
         });
         return results;
     }
 
-    this.getInstancesJMSEPath = (jmsePathString) => {
+    this.findJMESPath = (jmesPathString, dataSet) => {
         // Examples
         // --------
-        // aws.getInstancesJMSEPath('[?InstanceType==\'c3.large\'] | [?KernelId==\'aki-8e5ea7e7\']')
-        // aws.getInstancesJMSEPath('[*].{InstanceId: InstanceId, ImageId: ImageId}')
-        // aws.getInstancesJMSEPath('[*].[InstanceId, ImageId]')
-        // aws.getInstancesJMSEPath('[*].{InstanceId: InstanceId, ImageId: ImageId}')
-        // aws.getInstancesJMSEPath('[*].{PrivateIpAddress: PrivateIpAddress, State: State.Name, VpcId: VpcId}')
-        // aws.getInstancesJMSEPath('[?length(BlockDeviceMappings) > \`9\`]') // numeric comparison
-        // aws.getInstancesJMSEPath('[?length(BlockDeviceMappings) == \`10\`]')
+        // aws.getInstancesJMESPath('[?InstanceType==\'c3.large\'] | [?KernelId==\'aki-8e5ea7e7\']')
+        // aws.getInstancesJMESPath('[*].{InstanceId: InstanceId, ImageId: ImageId}')
+        // aws.getInstancesJMESPath('[*].[InstanceId, ImageId]')
+        // aws.getInstancesJMESPath('[*].{InstanceId: InstanceId, ImageId: ImageId}')
+        // aws.getInstancesJMESPath('[*].{PrivateIpAddress: PrivateIpAddress, State: State.Name, VpcId: VpcId}')
+        // aws.getInstancesJMESPath('[?length(BlockDeviceMappings) > \`9\`]') // numeric comparison
+        // aws.getInstancesJMESPath('[?length(BlockDeviceMappings) == \`10\`]')
         //
         // Find the instance with a given volume ID using deep search (matches this string anywhere in the instance)
         // aws.getInstances('vol-0b74a5ce22313f862')
         //
         // For comparision - find _specifically_ the instance that's using this volume ID (matches it exactly where it should be)
-        // aws.getInstancesJMSEPath(`[?contains(BlockDeviceMappings[].Ebs.VolumeId, 'vol-0b74a5ce22313f862')]`)
+        // aws.getInstancesJMESPath(`[?contains(BlockDeviceMappings[].Ebs.VolumeId, 'vol-0b74a5ce22313f862')]`)
+        //
+        // printTable(aws.findInstancesDeepThenJMESPath(target, '[*].{InstanceId: InstanceId, Name: Tags[?Key == \'Name\'].Value|[0], PrivateIpAddress: PrivateIpAddress}'));
 
-        return jmespath.search(this.data.instances, jmsePathString);
+        return jmespath.search(dataSet || this.data[dataSet], jmesPathString);
     }
 
     this.refresh = () => {
