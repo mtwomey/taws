@@ -111,8 +111,10 @@ function Taws() {
         // aws.getInstancesJMSEPath('[?InstanceType==\'c3.large\'] | [?KernelId==\'aki-8e5ea7e7\']')
         // aws.getInstancesJMSEPath('[*].{InstanceId: InstanceId, ImageId: ImageId}')
         // aws.getInstancesJMSEPath('[*].[InstanceId, ImageId]')
+        // aws.getInstancesJMSEPath('[*].{InstanceId: InstanceId, ImageId: ImageId}')
         // aws.getInstancesJMSEPath('[*].{PrivateIpAddress: PrivateIpAddress, State: State.Name, VpcId: VpcId}')
-        // aws.getInstancesJMSEPath(`[?length(BlockDeviceMappings) > '9']`) // numeric comparison
+        // aws.getInstancesJMSEPath('[?length(BlockDeviceMappings) > \`9\`]') // numeric comparison
+        // aws.getInstancesJMSEPath('[?length(BlockDeviceMappings) == \`10\`]')
         //
         // Find the instance with a given volume ID using deep search (matches this string anywhere in the instance)
         // aws.getInstances('vol-0b74a5ce22313f862')
