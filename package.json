@@ -2,7 +2,7 @@
   "name": "taws",
   "version": "1.0.0",
   "description": "",
-  "main": "taws.js",
+  "main": "src/taws.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,7 +10,10 @@
   "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.117.0",
+    "jmespath": "^0.15.0",
     "lodash": "^4.17.4",
-    "node-uuid": "^1.4.8"
+    "node-ini": "^1.0.0",
+    "node-uuid": "^1.4.8",
+    "os": "^0.1.1"
   }
 }
