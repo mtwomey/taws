@@ -29,25 +29,30 @@ async function init(config) {
     AWS.config = new AWS.Config(config);
     let taws = new Taws();
     await taws.loadData();
-    return {
-        refresh: taws.refresh,
-        instances: {
+
+    let wrapDataObjects = (dataSetKey) => {
+        return {
             getAll: () => {
-                return taws.data.instances;
+                return taws.data[dataSetKey];
             },
             findDeep: (searchString) => {
-                return taws.findDeep(searchString, taws.data['instances']);
+                return taws.findDeep(searchString, taws.data[dataSetKey]);
             },
             findJSMEPath: (jmesPath, dataSet) => {
-                return taws.findJMESPath(jmesPath, dataSet || taws.data['instances']);
+                return taws.findJMESPath(jmesPath, dataSet || taws.data[dataSetKey]);
             }
-        },
+        }
+    }
+    return {
+        refresh: taws.refresh,
+        instances: wrapDataObjects('instances'),
+        networkInterfaces: wrapDataObjects('networkInterfaces'),
+        addresses: wrapDataObjects('addresses')
+
     };
 }
 
 function Taws() {
-    this.data = {};
-
     this.loadData = () => {
         return new Promise((resolve, reject) => {
             try {
@@ -62,12 +67,19 @@ function Taws() {
     }
 
     this.requestAWSData = async () => {
+        this.data = {};
         await Promise.all([
             new AWS.EC2().describeInstances().promise().then(result => {
-                this.data.reservations = result.Reservations
+                this.data.reservations = result.Reservations;
             }),
             new AWS.AutoScaling().describeAutoScalingGroups().promise().then(result => {
-                this.data.autoScalingGroups = result.AutoScalingGroups
+                this.data.autoScalingGroups = result.AutoScalingGroups;
+            }),
+            new AWS.EC2().describeNetworkInterfaces().promise().then(result => {
+                this.data.networkInterfaces = result.NetworkInterfaces;
+            }),
+            new AWS.EC2().describeAddresses().promise().then(result => {
+                this.data.addresses = result.Addresses;
             }),
             // new AWS.CostExplorer().getCostAndUsage({
             //     TimePeriod: {
